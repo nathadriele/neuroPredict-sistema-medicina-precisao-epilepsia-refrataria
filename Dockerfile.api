@@ -1,0 +1,83 @@
+# Multi-stage build para otimização
+
+# ============================================================================
+# Stage 1: Base com dependências do sistema
+# ============================================================================
+FROM python:3.11-slim as base
+
+# Metadata
+LABEL maintainer="seu.email@exemplo.com"
+LABEL description="NeuroPredict API - Sistema de Medicina de Precisão"
+LABEL version="0.1.0"
+
+# Variáveis de ambiente
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Instala dependências do sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    git \
+    libgomp1 \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cria usuário não-root
+RUN useradd -m -u 1000 -s /bin/bash appuser
+
+# ============================================================================
+# Stage 2: Builder - Instala dependências Python
+# ============================================================================
+FROM base as builder
+
+WORKDIR /build
+
+# Instala Poetry (ou pip-tools)
+RUN pip install --upgrade pip setuptools wheel
+
+# Copia arquivos de dependências
+COPY pyproject.toml setup.py README.md ./
+COPY src/ ./src/
+
+# Instala dependências
+RUN pip install --user --no-warn-script-location .
+
+# ============================================================================
+# Stage 3: Runtime - Imagem final
+# ============================================================================
+FROM base as runtime
+
+# Copia dependências do builder
+COPY --from=builder /root/.local /home/appuser/.local
+
+# Configura PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
+
+# Define diretório de trabalho
+WORKDIR /app
+
+# Copia código da aplicação
+COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser scripts/ ./scripts/
+COPY --chown=appuser:appuser .env.example .env
+
+# Cria diretórios necessários
+RUN mkdir -p /app/logs /app/models /app/data && \
+    chown -R appuser:appuser /app
+
+# Muda para usuário não-root
+USER appuser
+
+# Expõe porta
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8000/ || exit 1
+
+# Comando de inicialização
+CMD ["uvicorn", "neuropredict.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
