@@ -65,7 +65,7 @@ NeuroPredict é um sistema básico de medicina de precisão baseado em IA que in
 ```bash
 # Clone o repositório
 git clone https://github.com/nathadriele/neuroPredict-sistema-medicina-precisao-epilepsia-refrataria.git
-cd neuroPredict-sistema-medicina-precisao-epilepsia-refrataria
+cd neuropredict
 
 # Crie ambiente virtual
 python -m venv venv
