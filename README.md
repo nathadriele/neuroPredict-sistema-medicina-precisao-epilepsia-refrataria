@@ -1,5 +1,8 @@
 # NeuroPredict: Sistema de Medicina de Precisão para Epilepsia Refratária
 
+<img width="1462" height="557" alt="Captura de tela de 2025-12-02 11-47-23" src="https://github.com/user-attachments/assets/7feafd7a-07b0-4a47-9d19-4e35022f1d03" />
+
+
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 ## Visão Geral
